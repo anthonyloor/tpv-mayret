@@ -27,7 +27,7 @@ const TransferForm = ({ type, onSave }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg p-6">
       <h2 className="text-lg font-bold mb-4">
         {type === 'traspasos' ? 'Traspaso entre Tiendas' : type === 'entrada' ? 'Entrada de Mercadería' : 'Salida de Mercadería'}
       </h2>
