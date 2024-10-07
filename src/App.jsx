@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; // Cambiamos Switch por Routes
 import NavbarCard from './components/NavbarCard.jsx';
 import SalesCard from './components/SalesCard.jsx';
 import ProductSearchCard from './components/ProductSearchCard.jsx';
+import PinPage from './components/PinPage.jsx'; // Importamos la página del PIN
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -51,23 +53,33 @@ function App() {
   };
 
   return (
-    <div className="bg-gray-light min-h-screen flex flex-col">
-      <NavbarCard />
-      <div className="flex flex-col md:flex-row flex-grow p-4 space-y-4 md:space-y-0 md:space-x-4">
+    <Router>
+      <div className="bg-gray-light min-h-screen flex flex-col">
+        <NavbarCard />
+        <Routes> {/* Cambiamos Switch por Routes */}
+          <Route
+            path="/"
+            element={
+              <div className="flex flex-col md:flex-row flex-grow p-4 space-y-4 md:space-y-0 md:space-x-4">
         {/* SalesCard se adapta a pantalla completa en móviles y 1/3 en pantallas grandes */}
-        <div className="w-full md:w-1/3">
-          <SalesCard
-            cartItems={cartItems}
-            onRemoveProduct={handleRemoveProduct}
-            onDecreaseProduct={handleDecreaseProduct}
-          />
-        </div>
+                <div className="w-full md:w-1/3">
+                  <SalesCard
+                    cartItems={cartItems}
+                    onRemoveProduct={handleRemoveProduct}
+                    onDecreaseProduct={handleDecreaseProduct}
+                  />
+                </div>
         {/* ProductSearchCard se adapta a pantalla completa en móviles y 2/3 en pantallas grandes */}
-        <div className="w-full md:w-2/3">
-          <ProductSearchCard onAddProduct={handleAddProduct} />
-        </div>
+                <div className="w-full md:w-2/3">
+                  <ProductSearchCard onAddProduct={handleAddProduct} />
+                </div>
+              </div>
+            }
+          />
+          <Route path="/pin" element={<PinPage />} /> {/* Nueva ruta para la página del PIN */}
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
 }
 
