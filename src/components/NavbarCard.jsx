@@ -22,6 +22,11 @@ const NavbarCard = () => {
     setCurrentView(view);  // Cambiamos a la vista seleccionada
   };
 
+  // Función para volver a la vista principal del modal
+  const goBackToMainView = () => {
+    setCurrentView('main');
+  };
+
   return (
     <div className="bg-white shadow p-4 flex justify-between items-center">
       <h1 className="text-xl font-bold">Pueblo Nuevo TPV</h1>
@@ -38,7 +43,7 @@ const NavbarCard = () => {
       {/* Modal para gestionar traspasos, entradas o salidas */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         {currentView === 'main' && (
-          <div>
+          <div className="transition-opacity duration-300 ease-in-out">
             <h2 className="text-xl font-bold mb-4">Gestión de Mercadería</h2>
             <div className="space-y-4">
               {/* Opciones para seleccionar tipo de operación */}
@@ -55,10 +60,20 @@ const NavbarCard = () => {
           </div>
         )}
 
-        {/* Componente TransferForm dependiendo del tipo de operación */}
-        {currentView === 'traspasos' && <TransferForm type="traspasos" onSave={closeModal} />}
-        {currentView === 'entrada' && <TransferForm type="entrada" onSave={closeModal} />}
-        {currentView === 'salida' && <TransferForm type="salida" onSave={closeModal} />}
+        {/* Componente TransferForm dependiendo del tipo de operación con botón Atrás alineado */}
+        {['traspasos', 'entrada', 'salida'].includes(currentView) && (
+          <div className="transition-opacity duration-300 ease-in-out">
+            {/* Botón de "Atrás" para volver a la vista principal */}
+            <div className="flex justify-between items-center mb-4">
+              <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={goBackToMainView}>
+                Atrás
+              </button>
+              {/* Espacio para alinear la X en el mismo nivel */}
+              <div className="invisible">Atrás</div>
+            </div>
+            <TransferForm type={currentView} onSave={closeModal} />
+          </div>
+        )}
       </Modal>
     </div>
   );
