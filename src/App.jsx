@@ -13,9 +13,7 @@ function App() {
         (item) => item.id_product_attribute === product.id_product_attribute
       );
 
-      // Si el producto ya está en el carrito
       if (existingProduct) {
-        // Verificar si la cantidad es menor a la cantidad disponible
         if (existingProduct.quantity < product.quantity) {
           return prevItems.map((item) =>
             item.id_product_attribute === product.id_product_attribute
@@ -27,7 +25,6 @@ function App() {
           return prevItems;
         }
       } else {
-        // Si el producto no está en el carrito, añadir con cantidad 1
         return [...prevItems, { ...product, quantity: 1 }];
       }
     });
@@ -56,15 +53,17 @@ function App() {
   return (
     <div className="bg-gray-light min-h-screen flex flex-col">
       <NavbarCard />
-      <div className="flex flex-grow p-4 space-x-4">
-        <div className="w-1/3">
+      <div className="flex flex-col md:flex-row flex-grow p-4 space-y-4 md:space-y-0 md:space-x-4">
+        {/* SalesCard se adapta a pantalla completa en móviles y 1/3 en pantallas grandes */}
+        <div className="w-full md:w-1/3">
           <SalesCard
             cartItems={cartItems}
             onRemoveProduct={handleRemoveProduct}
             onDecreaseProduct={handleDecreaseProduct}
           />
         </div>
-        <div className="w-2/3">
+        {/* ProductSearchCard se adapta a pantalla completa en móviles y 2/3 en pantallas grandes */}
+        <div className="w-full md:w-2/3">
           <ProductSearchCard onAddProduct={handleAddProduct} />
         </div>
       </div>
