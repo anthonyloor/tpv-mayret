@@ -1,25 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import TransferForm from './TransferForm';  // Importamos el formulario de traspaso
+import TransferForm from './TransferForm'; // Importamos el formulario de traspaso
+import PermisosModal from './PermissionsModal'; // Importamos el modal de permisos
+import empleadosData from '../data/empleados.json'; // Importamos los datos de empleados
+
+// Inicializamos los permisos en memoria
+const permisosIniciales = {
+  "Vendedor TPV": {
+    "acceso_ejecutar": "Denegado"
+  },
+  "Encargado": {
+    "acceso_ejecutar": "Permitido"
+  },
+  "Admin": {
+    "acceso_ejecutar": "Permitido"
+  }
+};
 
 const NavbarCard = () => {
-  const [isModalOpen, setModalOpen] = useState(false);  // Control del modal abierto/cerrado
-  const [currentView, setCurrentView] = useState('main');  // Control de vista actual ('main', 'traspasos', 'entrada', 'salida')
+  const [isModalOpen, setModalOpen] = useState(false); // Control del modal abierto/cerrado
+  const [currentView, setCurrentView] = useState('main'); // Control de vista actual ('main', 'traspasos', 'entrada', 'salida')
+  const [empleadoActual, setEmpleadoActual] = useState(null); // Estado para almacenar el empleado actual
+  const [permisosGlobal, setPermisosGlobal] = useState(permisosIniciales); // Estado para manejar los permisos globales
+
+  useEffect(() => {
+    // Simulamos que el empleado actual es el Admin cargando su información desde empleados.json
+    const empleadoAdmin = empleadosData.find(emp => emp.nivel_permisos === 'Admin');
+    setEmpleadoActual(empleadoAdmin);
+  }, []);
 
   // Función para cerrar el modal
   const closeModal = () => {
     setModalOpen(false);
-    setCurrentView('main');  // Volvemos a la vista principal del modal
+    setCurrentView('main'); // Volvemos a la vista principal del modal
   };
 
   // Función para abrir la vista de selección dentro del modal
   const openTransferView = () => {
-    setModalOpen(true);  // Abrimos el modal
+    setModalOpen(true); // Abrimos el modal
+  };
+
+  // Función para abrir la vista de configuración
+  const openConfigView = () => {
+    setModalOpen(true);
+    setCurrentView('config'); // Cambiamos a la vista de configuración
   };
 
   // Función para seleccionar la vista de traspasos, entrada o salida
   const selectTransferType = (view) => {
-    setCurrentView(view);  // Cambiamos a la vista seleccionada
+    setCurrentView(view); // Cambiamos a la vista seleccionada
   };
 
   // Función para volver a la vista principal del modal
@@ -37,7 +66,10 @@ const NavbarCard = () => {
         </button>
         <button className="text-black hover:text-gray-600">Etiquetas</button>
         <button className="text-black hover:text-gray-600">Caja</button>
-        <button className="text-black hover:text-gray-600">Configuración</button>
+        {/* Botón para abrir la configuración */}
+        <button className="text-black hover:text-gray-600" onClick={openConfigView}>
+          Configuración
+        </button>
       </div>
 
       {/* Modal para gestionar traspasos, entradas o salidas */}
@@ -60,18 +92,36 @@ const NavbarCard = () => {
           </div>
         )}
 
+        {/* Modal de Configuración */}
+        {currentView === 'config' && (
+          <div className="transition-opacity duration-300 ease-in-out">
+            <h2 className="text-xl font-bold mb-4">Configuración</h2>
+            <div className="space-y-4">
+              {/* Botones para cada opción de configuración */}
+              <button className="bg-gray-300 text-black px-4 py-2 rounded w-full" onClick={() => setCurrentView('permisos')}>
+                Permisos
+              </button>
+              <button className="bg-gray-300 text-black px-4 py-2 rounded w-full">Impresoras</button>
+              <button className="bg-gray-300 text-black px-4 py-2 rounded w-full">Inventario</button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal para gestionar permisos */}
+        {currentView === 'permisos' && (
+          <PermisosModal onClose={closeModal} empleadoActual={empleadoActual} setPermisosGlobal={setPermisosGlobal} />
+        )}
+
         {/* Componente TransferForm dependiendo del tipo de operación con botón Atrás alineado */}
         {['traspasos', 'entrada', 'salida'].includes(currentView) && (
           <div className="transition-opacity duration-300 ease-in-out">
-            {/* Botón de "Atrás" para volver a la vista principal */}
             <div className="flex justify-between items-center mb-4">
               <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={goBackToMainView}>
                 Atrás
               </button>
-              {/* Espacio para alinear la X en el mismo nivel */}
               <div className="invisible">Atrás</div>
             </div>
-            <TransferForm type={currentView} onSave={closeModal} />
+            <TransferForm type={currentView} onSave={closeModal} permisosUsuario={empleadoActual?.nivel_permisos} permisosGlobal={permisosGlobal} />
           </div>
         )}
       </Modal>

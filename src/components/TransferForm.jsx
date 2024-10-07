@@ -2,12 +2,18 @@ import React, { useState } from 'react';
 import ProductSearchCardForTransfer from './ProductSearchCardForTransfer';
 import ProductSelectionModal from './ProductSelectionModal';
 
-const TransferForm = ({ type, onSave }) => {
+const TransferForm = ({ type, onSave, permisosUsuario, permisosGlobal }) => {
   const [productsToTransfer, setProductsToTransfer] = useState([]);
   const [selectedStore, setSelectedStore] = useState('');
   const [selectedStore2, setSelectedStore2] = useState(''); // Solo para traspasos entre tiendas
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalProducts, setModalProducts] = useState([]);
+  const [permisoEjecutar, setPermisoEjecutar] = useState('Denegado');
+
+  // Comprobamos si el usuario tiene permisos para ejecutar
+  useState(() => {
+    setPermisoEjecutar(permisosGlobal[permisosUsuario]?.acceso_ejecutar || 'Denegado');
+  }, [permisosUsuario, permisosGlobal]);
 
   // Añadir producto a la lista de productos a transferir
   const handleAddProduct = (product) => {
@@ -19,6 +25,11 @@ const TransferForm = ({ type, onSave }) => {
     setModalProducts(products);
     setModalOpen(true);
   };
+
+    // Función para manejar el clic del botón Ejecutar
+    const handleEjecutar = () => {
+      alert('Traspaso ejecutado');
+    };
 
   // Seleccionar un producto desde el modal
   const handleSelectProduct = (product) => {
@@ -99,11 +110,18 @@ const TransferForm = ({ type, onSave }) => {
         </table>
       </div>
 
-      {/* Botón de guardar */}
-      <div className="mt-6">
+      {/* Botones de guardar y ejecutar */}
+      <div className="mt-6 flex gap-4">
         <button className="bg-blue-500 text-white px-4 py-2 rounded w-full" onClick={onSave}>
           Guardar
         </button>
+
+        {/* Botón Ejecutar solo accesible si los permisos lo permiten */}
+        {permisoEjecutar === 'Permitido' && (
+          <button className="bg-green-500 text-white px-4 py-2 rounded w-full" onClick={handleEjecutar}>
+            Ejecutar
+          </button>
+        )}
       </div>
 
       {/* Modal de selección de productos */}
