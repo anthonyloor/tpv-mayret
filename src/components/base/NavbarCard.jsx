@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
-import TransferForm from './TransferForm'; // Importamos el formulario de traspaso
-import PermisosModal from './PermissionsModal'; // Importamos el modal de permisos
-import empleadosData from '../data/empleados.json'; // Importamos los datos de empleados
+import Modal from '../modals/Modal';
+import TransferForm from '../modals/transfers/TransferForm'; // Importamos el formulario de traspaso
+import PermisosModal from '../modals/configuration/permissions/PermissionsModal'; // Importamos el modal de permisos
+import empleadosData from '../../data/empleados.json'; // Importamos los datos de empleados
 
 // Inicializamos los permisos en memoria
 const permisosIniciales = {

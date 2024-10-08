@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; // Cambiamos Switch por Routes
-import NavbarCard from './components/NavbarCard.jsx';
-import SalesCard from './components/SalesCard.jsx';
-import ProductSearchCard from './components/ProductSearchCard.jsx';
-import PinPage from './components/PinPage.jsx'; // Importamos la página del PIN
+import NavbarCard from './components/base/NavbarCard.jsx';
+import SalesCard from './components/base/SalesCard.jsx';
+import ProductSearchCard from './components/base/ProductSearchCard.jsx';
+import PinPage from './components/pages/PinPage.jsx'; // Importamos la página del PIN
 
 function App() {
   const [cartItems, setCartItems] = useState([]);

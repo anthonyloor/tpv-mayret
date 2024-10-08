@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Modal from './Modal'; // Importamos el componente Modal para la solicitud de PIN
+import Modal from '../modals/Modal'; // Importamos el componente Modal para la solicitud de PIN
 
 const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsuario }) => {
   const [isPinModalOpen, setPinModalOpen] = useState(false); // Estado para controlar la apertura del modal de PIN
