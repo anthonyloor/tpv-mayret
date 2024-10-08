@@ -1,24 +1,79 @@
 import React, { useState } from 'react';
-import Modal from '../modals/Modal'; // Importamos el componente Modal para la solicitud de PIN
+import Modal from '../modals/Modal';
 
 const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsuario }) => {
-  const [isPinModalOpen, setPinModalOpen] = useState(false); // Estado para controlar la apertura del modal de PIN
+  const [isFinalSaleModalOpen, setFinalSaleModalOpen] = useState(false);
+  const [selectedMethods, setSelectedMethods] = useState([]);
+  const [amounts, setAmounts] = useState({ efectivo: '', tarjeta: '', bizum: '' });
+  const [changeAmount, setChangeAmount] = useState(0);
+  const [copies, setCopies] = useState(1); // Número de copias del ticket
+  const [giftTicket, setGiftTicket] = useState(false); // Estado del ticket de regalo
+
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Manejar la lógica del botón de descuento
-  const handleDescuento = () => {
-    if (['Admin', 'Encargado'].includes(permisosUsuario)) {
-      alert('Haciendo descuento'); // Si el usuario tiene permisos, ejecutar el descuento
+  const handleFinalSale = () => {
+    setFinalSaleModalOpen(true);
+  };
+
+  const updateChangeAmount = (updatedAmounts) => {
+    if (selectedMethods.length === 0) {
+      setChangeAmount(0); // Si no hay métodos de pago seleccionados, el cambio es 0
     } else {
-      setPinModalOpen(true); // Si no tiene permisos, abrir el modal de solicitud de PIN
+      const totalEnteredAmount = Object.values(updatedAmounts).reduce((sum, value) => sum + (parseFloat(value) || 0), 0);
+      setChangeAmount(totalEnteredAmount - total); // Mostrar la diferencia, incluso si es negativa
     }
   };
+
+  const togglePaymentMethod = (method) => {
+    if (selectedMethods.includes(method)) {
+      // Deseleccionar el método de pago y borrar su importe
+      const updatedAmounts = { ...amounts, [method]: '' };
+      setSelectedMethods((prevMethods) => prevMethods.filter((m) => m !== method));
+      setAmounts(updatedAmounts);
+      updateChangeAmount(updatedAmounts);
+    } else {
+      // Seleccionar el método de pago
+      setSelectedMethods((prevMethods) => [...prevMethods, method]);
+
+      // Autocompletar el importe para tarjeta y bizum con el total restante
+      if (method === 'tarjeta' || method === 'bizum') {
+        const totalEnteredAmount = Object.values(amounts).reduce((sum, amount) => sum + (parseFloat(amount) || 0), 0);
+        const updatedAmounts = {
+          ...amounts,
+          [method]: total - totalEnteredAmount > 0 ? (total - totalEnteredAmount).toFixed(2) : '',
+        };
+        setAmounts(updatedAmounts);
+        updateChangeAmount(updatedAmounts);
+      }
+    }
+  };
+
+  const handleAmountChange = (method, amount) => {
+    const updatedAmounts = { ...amounts, [method]: amount };
+    setAmounts(updatedAmounts);
+    updateChangeAmount(updatedAmounts);
+  };
+
+  const finalizeSale = () => {
+    const saleData = {
+      cartItems,
+      total,
+      selectedMethods,
+      amounts,
+      changeAmount,
+      copies,
+      giftTicket,
+    };
+    console.log('Información del ticket de compra:', saleData);
+    setFinalSaleModalOpen(false);
+  };
+
+  const isFinalizeDisabled = Object.values(amounts).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) < total;
 
   return (
     <div className="bg-white rounded-lg shadow p-4 h-full flex flex-col justify-between">
       <div>
         <h2 className="text-lg font-semibold mb-4">Ticket de Compra</h2>
-        {/* Cabecera del ticket */}
         <div className="grid grid-cols-5 gap-4 font-bold border-b py-2">
           <span>Cantidad</span>
           <span>Producto</span>
@@ -30,15 +85,10 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
           <ul>
             {cartItems.map((item, index) => (
               <li key={index} className="grid grid-cols-5 gap-4 py-2 items-center border-b">
-                {/* Cantidad */}
                 <span className="font-bold">{item.quantity}x</span>
-                {/* Nombre del producto */}
                 <span>{item.name}</span>
-                {/* Precio por unidad */}
                 <span>${item.price.toFixed(2)} / unidad</span>
-                {/* Precio total por este producto */}
                 <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
-                {/* Botones para disminuir o eliminar */}
                 <div className="flex justify-end space-x-2">
                   <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => onDecreaseProduct(item.id_product_attribute)}>-</button>
                   <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => onRemoveProduct(item.id_product_attribute)}>X</button>
@@ -50,30 +100,95 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
           <p>No hay productos en el ticket.</p>
         )}
       </div>
-      {/* Sección del total y los botones adicionales */}
       <div className="mt-4">
         <div className="border-t pt-4 flex justify-between items-center">
           <h3 className="text-2xl font-bold">Total: ${total.toFixed(2)}</h3>
         </div>
-        {/* Botones de acciones adicionales */}
         <div className="mt-4 flex justify-between space-x-4">
-          <button className="bg-gray-300 text-black px-4 py-2 rounded w-full" onClick={handleDescuento}>Descuento</button>
+          <button className="bg-gray-300 text-black px-4 py-2 rounded w-full" onClick={() => alert('Descuento aplicado')}>Descuento</button>
           <button className="bg-gray-300 text-black px-4 py-2 rounded w-full">Reimprimir Ticket</button>
           <button className="bg-green-500 text-white px-4 py-2 rounded w-full">+ Añadir Manualmente</button>
         </div>
-        {/* Botón para finalizar venta */}
         <div className="mt-4">
-          <button className="bg-blue-600 text-white px-4 py-3 rounded w-full text-lg font-bold">Finalizar Venta</button>
+          <button
+            className={`px-4 py-3 rounded w-full text-lg font-bold ${cartItems.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white'}`}
+            disabled={cartItems.length === 0}
+            onClick={handleFinalSale}
+          >
+            Finalizar Venta
+          </button>
         </div>
       </div>
 
-      {/* Modal de solicitud de PIN */}
-      <Modal isOpen={isPinModalOpen} onClose={() => setPinModalOpen(false)}>
+      {/* Modal para finalizar la venta */}
+      <Modal isOpen={isFinalSaleModalOpen} onClose={() => setFinalSaleModalOpen(false)}>
         <div className="p-6">
-          <h2 className="text-lg font-bold mb-4">Ingrese el PIN de autorización</h2>
-          <input className="border rounded w-full p-2 mb-4" type="password" placeholder="Ingrese el PIN" />
-          <button className="bg-blue-500 text-white px-4 py-2 rounded w-full" onClick={() => alert('PIN Correcto, Descuento Aplicado')}>
-            Confirmar
+          <h2 className="text-lg font-bold mb-4">Finalizar Venta</h2>
+
+          {/* Número de copias y ticket regalo */}
+          <div className="flex justify-between mb-4">
+            <div className="flex items-center">
+              <label className="mr-2">Copias:</label>
+              <input
+                type="number"
+                min="1"
+                value={copies}
+                onChange={(e) => setCopies(e.target.value)}
+                className="border rounded p-2 w-16"
+              />
+            </div>
+            <div className="flex items-center">
+              <span className="mr-2">Ticket Regalo:</span>
+              <button
+                className={`px-4 py-2 rounded ${giftTicket ? 'bg-green-600 text-white' : 'bg-gray-300'}`}
+                onClick={() => setGiftTicket(true)}
+              >
+                Sí
+              </button>
+              <button
+                className={`ml-2 px-4 py-2 rounded ${!giftTicket ? 'bg-red-600 text-white' : 'bg-gray-300'}`}
+                onClick={() => setGiftTicket(false)}
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          {/* Importe total y detalles del pago */}
+          <div className="mb-4">
+            <h3 className="text-3xl font-bold">Importe Total: ${total.toFixed(2)}</h3>
+            <p className="text-2xl font-bold">Cambio: ${changeAmount.toFixed(2)}</p>
+          </div>
+
+          {/* Métodos de pago con inputs alineados */}
+          <div className="flex flex-col space-y-4 mb-4">
+            {['efectivo', 'tarjeta', 'bizum'].map((method) => (
+              <div key={method} className="flex items-center space-x-4">
+                <button
+                  className={`w-1/3 py-4 rounded ${selectedMethods.includes(method) ? (method === 'efectivo' ? 'bg-green-500' : 'bg-blue-500') : 'bg-gray-400'} text-white`}
+                  onClick={() => togglePaymentMethod(method)}
+                >
+                  {method.charAt(0).toUpperCase() + method.slice(1)}
+                </button>
+                <input
+                  className="border rounded w-2/3 p-3"
+                  type="number"
+                  placeholder={`Importe en ${method.charAt(0).toUpperCase() + method.slice(1)}`}
+                  value={amounts[method]}
+                  onChange={(e) => handleAmountChange(method, e.target.value)}
+                  disabled={!selectedMethods.includes(method)}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Botón para finalizar la venta */}
+          <button
+            className={`w-full py-4 px-4 py-2 rounded text-white ${isFinalizeDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600'}`}
+            onClick={finalizeSale}
+            disabled={isFinalizeDisabled}
+          >
+            Finalizar Venta
           </button>
         </div>
       </Modal>
