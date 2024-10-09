@@ -26,16 +26,12 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
 
   const togglePaymentMethod = (method) => {
     if (selectedMethods.includes(method)) {
-      // Deseleccionar el método de pago y borrar su importe
       const updatedAmounts = { ...amounts, [method]: '' };
       setSelectedMethods((prevMethods) => prevMethods.filter((m) => m !== method));
       setAmounts(updatedAmounts);
       updateChangeAmount(updatedAmounts);
     } else {
-      // Seleccionar el método de pago
       setSelectedMethods((prevMethods) => [...prevMethods, method]);
-
-      // Autocompletar el importe para tarjeta y bizum con el total restante
       if (method === 'tarjeta' || method === 'bizum') {
         const totalEnteredAmount = Object.values(amounts).reduce((sum, amount) => sum + (parseFloat(amount) || 0), 0);
         const updatedAmounts = {
@@ -71,8 +67,17 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
   const isFinalizeDisabled = Object.values(amounts).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) < total;
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 h-full flex flex-col justify-between">
-      <div>
+    <div className="bg-white rounded-lg shadow p-4 h-full flex flex-col justify-between relative overflow-hidden">
+      {/* Fondo del logo */}
+      <div
+        className="absolute inset-0 bg-center bg-no-repeat opacity-10"
+        style={{
+          backgroundImage: 'url(/logo-marca.png)', // Asegúrate de que la imagen esté en la carpeta public y se llame logo-marca.png
+          backgroundSize: '40%',
+        }}
+      ></div>
+
+      <div className="relative z-10">
         <h2 className="text-lg font-semibold mb-4">Ticket de Compra</h2>
         <div className="grid grid-cols-5 gap-4 font-bold border-b py-2">
           <span>Cantidad</span>
@@ -86,9 +91,9 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
             {cartItems.map((item, index) => (
               <li key={index} className="grid grid-cols-5 gap-4 py-2 items-center border-b">
                 <span className="font-bold">{item.quantity}x</span>
-                <span>{item.name}</span>
-                <span>${item.price.toFixed(2)} / unidad</span>
-                <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
+                <span>{item.product_name} {item.combination_name}</span>
+                <span>{item.price.toFixed(2)} €</span>
+                <span className="font-bold">{(item.price * item.quantity).toFixed(2)} €</span>
                 <div className="flex justify-end space-x-2">
                   <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => onDecreaseProduct(item.id_product_attribute)}>-</button>
                   <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => onRemoveProduct(item.id_product_attribute)}>X</button>
@@ -100,9 +105,9 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
           <p>No hay productos en el ticket.</p>
         )}
       </div>
-      <div className="mt-4">
+      <div className="relative mt-4">
         <div className="border-t pt-4 flex justify-between items-center">
-          <h3 className="text-2xl font-bold">Total: ${total.toFixed(2)}</h3>
+          <h3 className="text-2xl font-bold">Total: {total.toFixed(2)} €</h3>
         </div>
         <div className="mt-4 flex justify-between space-x-4">
           <button className="bg-gray-300 text-black px-4 py-2 rounded w-full" onClick={() => alert('Descuento aplicado')}>Descuento</button>
@@ -156,8 +161,8 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
 
           {/* Importe total y detalles del pago */}
           <div className="mb-4">
-            <h3 className="text-3xl font-bold">Importe Total: ${total.toFixed(2)}</h3>
-            <p className="text-2xl font-bold">Cambio: ${changeAmount.toFixed(2)}</p>
+            <h3 className="text-3xl font-bold">Importe Total: {total.toFixed(2)} €</h3>
+            <p className="text-2xl font-bold">Cambio: ${changeAmount.toFixed(2)} €</p>
           </div>
 
           {/* Métodos de pago con inputs alineados */}
