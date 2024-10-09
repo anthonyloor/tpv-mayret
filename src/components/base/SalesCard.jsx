@@ -78,13 +78,12 @@ const SalesCard = ({ cartItems, onRemoveProduct, onDecreaseProduct, permisosUsua
       ></div>
 
       <div className="relative z-10">
-        <h2 className="text-lg font-semibold mb-4">Ticket de Compra</h2>
+        
         <div className="grid grid-cols-5 gap-4 font-bold border-b py-2">
-          <span>Cantidad</span>
+          <span>Und.</span>
           <span>Producto</span>
-          <span>Precio Unidad</span>
-          <span>Precio Total</span>
-          <span className="text-right">Acciones</span>
+          <span>P/U</span>
+          <span>Total</span>
         </div>
         {cartItems.length > 0 ? (
           <ul>

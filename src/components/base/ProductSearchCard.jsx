@@ -42,7 +42,7 @@ const ProductSearchCard = ({ onAddProduct }) => {
         // Limpiamos el campo de búsqueda
         setSearchTerm('');
         // Limpiamos los productos filtrados para vaciar la lista de resultados
-        setFilteredProducts([]);
+        // setFilteredProducts([]);
       }
     }
   };  
@@ -145,10 +145,9 @@ const ProductSearchCard = ({ onAddProduct }) => {
 
   return (
     <div className="bg-white rounded-lg shadow p-4 h-full">
-      <h2 className="text-lg font-semibold mb-4">Buscar Producto</h2>
       <input
         type="text"
-        placeholder="Buscar por nombre o código..."
+        placeholder="Buscar por referencia o código de barras..."
         className="border rounded p-2 w-full mb-4"
         value={searchTerm}
         onChange={handleSearch}
