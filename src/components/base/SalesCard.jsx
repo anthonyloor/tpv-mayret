@@ -120,159 +120,198 @@ const SalesCard = ({
   };
 
   const generatePDF = (saleData) => {
+    const { copies, giftTicket } = saleData;
+    const numCopies = giftTicket ? 1 : copies; // Si es ticket regalo, solo una copia
+  
     const doc = new jsPDF({
       unit: 'mm',
       format: [72.11, 297],
-    });    
-  
-    // Establecer la fuente predeterminada
-    doc.setFont('Helvetica', 'normal');
-  
-    let yPosition = 20;
-  
-    // Logo de cabecera
-    if (ticketConfigData.logo) {
-      const img = new Image();
-      img.src = ticketConfigData.logo;
-      doc.addImage(img, 'PNG', 80, yPosition, 50, 30); // Ajusta las coordenadas y tamaño según sea necesario
-      yPosition += 40;
-    }
-  
-    // Texto de cabecera 1
-    if (ticketConfigData.headerText1) {
-      doc.setFontSize(12);
-      doc.text(ticketConfigData.headerText1, 105, yPosition, { align: 'center' });
-      yPosition += 6;
-    }
-  
-    // Texto de cabecera 2
-    if (ticketConfigData.headerText2) {
-      doc.setFontSize(12);
-      doc.text(ticketConfigData.headerText2, 105, yPosition, { align: 'center' });
-      yPosition += 6;
-    }
-  
-    // Información de la tienda
-    doc.setFontSize(12);
-    doc.text(saleData.shop.shop_name, 10, yPosition);
-    yPosition += 6;
-    doc.text(`Dirección: ${saleData.shop.address}`, 10, yPosition);
-    yPosition += 6;
-    doc.text(`Teléfono: ${saleData.shop.phone}`, 10, yPosition);
-    yPosition += 10;
-  
-    // Fecha y hora de la venta
-    const date = saleData.date;
-    const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${
-      (date.getMonth() + 1).toString().padStart(2, '0')
-    }/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${
-      date.getMinutes().toString().padStart(2, '0')
-    }`;
-
-    // Reemplaza las líneas donde se muestra la fecha y hora por:
-    doc.text(`Fecha: ${formattedDate}`, 10, yPosition);
-    yPosition += 6;
-    doc.text(`Atendido por: ${saleData.employeeName}`, 10, yPosition);
-    yPosition += 10;
-
-    // Línea divisoria
-    doc.line(10, yPosition, 200, yPosition);
-    yPosition += 6;
-  
-    // Encabezados de la tabla
-    doc.setFontSize(12);
-    doc.text('Cant.', 10, yPosition);
-    doc.text('Producto', 30, yPosition);
-    doc.text('P/U', 130, yPosition, { align: 'right' });
-    doc.text('Total', 180, yPosition, { align: 'right' });
-    yPosition += 8;
-  
-    // Detalles de los productos
-    saleData.cartItems.forEach((item) => {
-      doc.text(`${item.quantity}`, 10, yPosition);
-      doc.text(`${item.product_name} ${item.combination_name}`, 30, yPosition);
-      doc.text(`${item.price.toFixed(2)} €`, 130, yPosition, { align: 'right' });
-      doc.text(`${(item.price * item.quantity).toFixed(2)} €`, 180, yPosition, { align: 'right' });
-      yPosition += 8;
     });
   
-    // Línea divisoria
-    doc.line(10, yPosition, 200, yPosition);
-    yPosition += 6;
+    for (let i = 0; i < numCopies; i++) {
+      if (i > 0) {
+        doc.addPage();
+      }
   
-    // Total
-    doc.setFontSize(14);
-    doc.text(`Total: ${saleData.total.toFixed(2)} €`, 180, yPosition, { align: 'right' });
-    yPosition += 10;
+      let yPosition = 10;
   
-    // Métodos de pago
-    doc.setFontSize(12);
-    doc.text('Métodos de Pago:', 10, yPosition);
-    yPosition += 6;
-    saleData.selectedMethods.forEach((method) => {
-      const amount = parseFloat(saleData.amounts[method]);
-      if (!isNaN(amount) && amount > 0) {
-        doc.text(
-          `${method.charAt(0).toUpperCase() + method.slice(1)}: ${amount.toFixed(2)} €`,
-          20,
-          yPosition
-        );
+      // 1. Logo-imagen
+      if (ticketConfigData.logo) {
+        const img = new Image();
+        img.src = ticketConfigData.logo;
+        doc.addImage(img, 'PNG', 10, yPosition, 50, 30);
+        yPosition += 35;
+      }
+  
+      // 2. Texto cabecera 1
+      if (ticketConfigData.headerText1) {
+        doc.setFontSize(12);
+        doc.text(ticketConfigData.headerText1, 36.055, yPosition, { align: 'center' });
         yPosition += 6;
       }
-    });
   
-    // Cambio
-    doc.text(`Cambio: ${saleData.changeAmount.toFixed(2)} €`, 10, yPosition);
-    yPosition += 10;
-
-    const IVA_RATE = 0.21; // 21%
-    const baseAmount = saleData.total / (1 + IVA_RATE);
-    const ivaAmount = saleData.total - baseAmount;
-
-    // Después de los métodos de pago
-    doc.setFontSize(12);
-    doc.text(`IVA (${(IVA_RATE * 100).toFixed(0)}%): ${ivaAmount.toFixed(2)} €`, 10, yPosition);
-    yPosition += 10;
-
+      // 3. Texto cabecera 2
+      if (ticketConfigData.headerText2) {
+        doc.setFontSize(12);
+        doc.text(ticketConfigData.headerText2, 36.055, yPosition, { align: 'center' });
+        yPosition += 6;
+      }
   
-    // Texto final 1
-    if (ticketConfigData.footerText1) {
+      // 4. Separador
+      doc.line(10, yPosition, 62.11, yPosition);
+      yPosition += 3;
+  
+      // 5. "Ticket compra" o "Ticket regalo"
+      const ticketTypeText = saleData.giftTicket ? 'Ticket regalo' : 'Ticket compra';
       doc.setFontSize(12);
-      doc.text(ticketConfigData.footerText1, 105, yPosition, { align: 'center' });
+      doc.text(ticketTypeText, 36.055, yPosition, { align: 'center' });
       yPosition += 6;
+  
+      // 6. Fecha: dd/mm/aaaa hh:mm
+      const date = saleData.date;
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${
+        (date.getMonth() + 1).toString().padStart(2, '0')
+      }/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${
+        date.getMinutes().toString().padStart(2, '0')
+      }`;
+  
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${formattedDate}`, 10, yPosition);
+      yPosition += 5;
+  
+      // 7. Atendido por: name_employee
+      doc.text(`Atendido por: ${saleData.employeeName}`, 10, yPosition);
+      yPosition += 5;
+  
+      // 8. Separador
+      doc.line(10, yPosition, 62.11, yPosition);
+      yPosition += 3;
+  
+      // 9. Tabla de productos del ticket
+      doc.setFontSize(10);
+      doc.text('Cant.', 10, yPosition);
+      doc.text('Producto', 20, yPosition);
+      if (!saleData.giftTicket) {
+        doc.text('P/U', 50, yPosition, { align: 'right' });
+        doc.text('Total', 70, yPosition, { align: 'right' });
+      }
+      yPosition += 5;
+  
+      saleData.cartItems.forEach((item) => {
+        const productText = `${item.product_name} ${item.combination_name}`;
+        const splittedText = doc.splitTextToSize(productText, 40);
+  
+        doc.text(`${item.quantity}`, 10, yPosition);
+        doc.text(splittedText, 20, yPosition);
+  
+        if (!saleData.giftTicket) {
+          doc.text(`${item.price.toFixed(2)} €`, 50, yPosition, { align: 'right' });
+          doc.text(`${(item.price * item.quantity).toFixed(2)} €`, 70, yPosition, { align: 'right' });
+        }
+  
+        const lineHeight = 5;
+        const textHeight = splittedText.length * lineHeight;
+  
+        yPosition += textHeight + 2;
+      });
+  
+      // 10. Separador
+      doc.line(10, yPosition, 62.11, yPosition);
+      yPosition += 3;
+  
+      if (!saleData.giftTicket) {
+        // 11. Total
+        doc.setFontSize(12);
+        doc.text(`Total: ${saleData.total.toFixed(2)} €`, 70, yPosition, { align: 'right' });
+        yPosition += 7;
+  
+        // 12. Métodos de pago y cambio
+        doc.setFontSize(10);
+        doc.text('Métodos de Pago:', 10, yPosition);
+        yPosition += 5;
+        saleData.selectedMethods.forEach((method) => {
+          const amount = parseFloat(saleData.amounts[method]);
+          if (!isNaN(amount) && amount > 0) {
+            doc.text(
+              `${method.charAt(0).toUpperCase() + method.slice(1)}: ${amount.toFixed(2)} €`,
+              20,
+              yPosition
+            );
+            yPosition += 5;
+          }
+        });
+  
+        // Cambio
+        doc.text(`Cambio: ${saleData.changeAmount.toFixed(2)} €`, 10, yPosition);
+        yPosition += 5;
+  
+        // 13. IVA
+        const IVA_RATE = 0.21; // 21%
+        const baseAmount = saleData.total / (1 + IVA_RATE);
+        const ivaAmount = saleData.total - baseAmount;
+        doc.text(`IVA (${(IVA_RATE * 100).toFixed(0)}%): ${ivaAmount.toFixed(2)} €`, 10, yPosition);
+        yPosition += 7;
+      }
+  
+      // 14. Separador
+      doc.line(10, yPosition, 62.11, yPosition);
+      yPosition += 3;
+  
+      // 15. Código de barras
+      const barcodeValue = 'ticket-1234567890';
+  
+      // Crear un elemento canvas
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, barcodeValue, {
+        format: 'CODE128',
+        displayValue: false,
+        width: 1,
+        height: 40,
+        margin: 0,
+      });
+  
+      // Convertir el canvas a imagen base64
+      const barcodeDataUrl = canvas.toDataURL('image/png');
+  
+      // Agregar la imagen al PDF
+      doc.addImage(barcodeDataUrl, 'PNG', 10, yPosition, 50, 20);
+      yPosition += 25;
+  
+      // 16. Texto footer 1
+      doc.setFontSize(10);
+      if (ticketConfigData.footerText1) {
+        doc.text(ticketConfigData.footerText1, 36.055, yPosition, { align: 'center', maxWidth: 60 });
+        yPosition += 5;
+      }
+  
+      // 17. Texto footer 2
+      if (ticketConfigData.footerText2) {
+        doc.text(ticketConfigData.footerText2, 36.055, yPosition, { align: 'center', maxWidth: 60 });
+        yPosition += 5;
+      }
     }
   
-    // Texto final 2
-    if (ticketConfigData.footerText2) {
-      doc.setFontSize(12);
-      doc.text(ticketConfigData.footerText2, 105, yPosition, { align: 'center' });
-      yPosition += 6;
-    }
+    // Configuramos el documento para imprimir automáticamente
+    doc.autoPrint();
   
-    // Mensaje de agradecimiento
-    doc.setFontSize(12);
-    doc.text('¡Gracias por su compra!', 105, yPosition, { align: 'center' });
+    // Obtenemos el PDF como blob
+    const pdfBlob = doc.output('blob');
   
-    // Configuramos el documento para que se imprima automáticamente
-  doc.autoPrint();
-
-  // Obtenemos el PDF como un blob
-  const pdfBlob = doc.output('blob');
-
-  // Creamos un objeto URL para el blob
-  const blobUrl = URL.createObjectURL(pdfBlob);
-
-  // Creamos un iframe oculto
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = blobUrl;
-
-  document.body.appendChild(iframe);
-
-  iframe.onload = () => {
-    iframe.contentWindow.print();
+    // Creamos un objeto URL para el blob
+    const blobUrl = URL.createObjectURL(pdfBlob);
+  
+    // Creamos un iframe oculto
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = blobUrl;
+  
+    document.body.appendChild(iframe);
+  
+    iframe.onload = () => {
+      iframe.contentWindow.print();
+    };
   };
-};
+    
 
   const isFinalizeDisabled =
     Object.values(amounts).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) < total;
