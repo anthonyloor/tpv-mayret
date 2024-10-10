@@ -9,14 +9,22 @@ import sessionConfig from './data/sessionConfig.json';
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [currentShop, setCurrentShop] = useState(sessionConfig);
+  const [lastAction, setLastAction] = useState(null);
 
   // Función para añadir productos al ticket, verificando la cantidad máxima disponible
-  const handleAddProduct = (product, stockQuantity, allowOutOfStockSales, exceedsStockCallback, forceAdd = false) => {
+  const handleAddProduct = (
+    product,
+    stockQuantity,
+    allowOutOfStockSales,
+    exceedsStockCallback,
+    forceAdd = false
+  ) => {
     const existingProduct = cartItems.find(
       (item) => item.id_product_attribute === product.id_product_attribute
     );
 
-    const maxQuantity = stockQuantity !== null && stockQuantity !== undefined ? stockQuantity : Infinity;
+    const maxQuantity =
+      stockQuantity !== null && stockQuantity !== undefined ? stockQuantity : Infinity;
 
     let newQuantity = existingProduct ? existingProduct.quantity + 1 : 1;
 
@@ -43,6 +51,13 @@ function App() {
         return [...prevItems, { ...product, quantity: 1 }];
       }
     });
+
+    // Establecemos la última acción para la animación en SalesCard
+    setLastAction({
+      id: product.id_product_attribute,
+      action: 'add',
+      timestamp: Date.now(),
+    });
   };
 
   // Función para reducir la cantidad de un producto o eliminarlo si llega a 0
@@ -56,6 +71,13 @@ function App() {
         )
         .filter((item) => item.quantity > 0)
     );
+
+    // Establecemos la última acción para la animación en SalesCard
+    setLastAction({
+      id: idProductAttribute,
+      action: 'decrease',
+      timestamp: Date.now(),
+    });
   };
 
   // Función para eliminar un producto completamente del ticket
@@ -77,8 +99,10 @@ function App() {
                 <div className="w-full md:w-2/5">
                   <SalesCard
                     cartItems={cartItems}
+                    setCartItems={setCartItems}
                     onRemoveProduct={handleRemoveProduct}
                     onDecreaseProduct={handleDecreaseProduct}
+                    lastAction={lastAction}
                   />
                 </div>
                 <div className="w-full md:w-3/5">

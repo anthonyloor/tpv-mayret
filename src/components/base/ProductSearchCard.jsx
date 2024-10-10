@@ -11,6 +11,7 @@ const ProductSearchCard = ({ onAddProduct }) => {
   const [currentShop, setCurrentShop] = useState(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [productToConfirm, setProductToConfirm] = useState(null);
+  const [clickedButtons, setClickedButtons] = useState({});
 
   useEffect(() => {
     // Cargamos la configuración de la sesión para obtener la tienda en curso
@@ -25,17 +26,18 @@ const ProductSearchCard = ({ onAddProduct }) => {
   const handleKeyDown = (event) => {
     // Solo realiza la búsqueda si el término tiene al menos 3 caracteres y se presiona Enter
     if (event.key === 'Enter' && searchTerm.length >= 3) {
-      const results = productsData.filter((product) =>
-        product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.ean13_combination.toString().includes(searchTerm)
+      const results = productsData.filter(
+        (product) =>
+          product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.ean13_combination.toString().includes(searchTerm)
       );
-  
+
       const filteredForCurrentShop = results.filter(
         (product) => product.shop_name === currentShop.shop_name
       );
-  
+
       setFilteredProducts(groupProductsByProductName(results));
-  
+
       // Verificamos si solo hay un producto para la tienda actual
       if (filteredForCurrentShop.length === 1) {
         addProductToCart(filteredForCurrentShop[0]);
@@ -45,7 +47,7 @@ const ProductSearchCard = ({ onAddProduct }) => {
         // setFilteredProducts([]);
       }
     }
-  };  
+  };
 
   const groupProductsByProductName = (products) => {
     const grouped = products.reduce((acc, product) => {
@@ -55,11 +57,14 @@ const ProductSearchCard = ({ onAddProduct }) => {
           (combination) => combination.id_product_attribute === product.id_product_attribute
         );
         if (existingCombination) {
-          existingCombination.stocks.push({ shop_name: product.shop_name, quantity: product.quantity });
+          existingCombination.stocks.push({
+            shop_name: product.shop_name,
+            quantity: product.quantity,
+          });
         } else {
           existingGroup.combinations.push({
             ...product,
-            stocks: [{ shop_name: product.shop_name, quantity: product.quantity }]
+            stocks: [{ shop_name: product.shop_name, quantity: product.quantity }],
           });
         }
       } else {
@@ -69,8 +74,8 @@ const ProductSearchCard = ({ onAddProduct }) => {
           combinations: [
             {
               ...product,
-              stocks: [{ shop_name: product.shop_name, quantity: product.quantity }]
-            }
+              stocks: [{ shop_name: product.shop_name, quantity: product.quantity }],
+            },
           ],
         });
       }
@@ -94,17 +99,17 @@ const ProductSearchCard = ({ onAddProduct }) => {
     if (!Array.isArray(stocks)) {
       stocks = [{ shop_name: product.shop_name, quantity: product.quantity }];
     }
-  
+
     // Obtener el stock actual para la tienda en curso
     const currentShopStock = stocks.find((stock) => stock.shop_name === currentShop.shop_name);
     const stockQuantity = currentShopStock ? currentShopStock.quantity : 0;
-  
+
     // Verificar si se permite vender sin stock
     if (!currentShop.allowOutOfStockSales && stockQuantity <= 0) {
       alert('No puedes añadir este producto porque no hay stock disponible.');
       return;
     }
-  
+
     // Rest of the code remains the same
     const productForCart = {
       ...product,
@@ -112,19 +117,23 @@ const ProductSearchCard = ({ onAddProduct }) => {
       shop_name: currentShop ? currentShop.shop_name : '',
       id_shop: currentShop ? currentShop.id_shop : '',
     };
-  
+
     delete productForCart.stocks; // Eliminamos la propiedad stocks si existe
-  
+
     // Llamamos a la función onAddProduct y pasamos el stockQuantity para que se maneje en el carrito
-    onAddProduct(productForCart, stockQuantity, currentShop.allowOutOfStockSales, (exceedsStock) => {
-      if (exceedsStock) {
-        // Si se excede el stock y allowOutOfStockSales es true, mostramos el modal de confirmación
-        setProductToConfirm(productForCart);
-        setConfirmModalOpen(true);
+    onAddProduct(
+      productForCart,
+      stockQuantity,
+      currentShop.allowOutOfStockSales,
+      (exceedsStock) => {
+        if (exceedsStock) {
+          // Si se excede el stock y allowOutOfStockSales es true, mostramos el modal de confirmación
+          setProductToConfirm(productForCart);
+          setConfirmModalOpen(true);
+        }
       }
-    });
+    );
   };
-  
 
   const handleProductClick = (imageUrl) => {
     setSelectedProductImage(imageUrl);
@@ -141,6 +150,15 @@ const ProductSearchCard = ({ onAddProduct }) => {
   const handleCancelAdd = () => {
     setConfirmModalOpen(false);
     setProductToConfirm(null);
+  };
+
+  // Función para manejar la animación del botón "Añadir"
+  const handleAddToCartWithAnimation = (product) => {
+    addProductToCart(product);
+    setClickedButtons((prev) => ({ ...prev, [product.id_product_attribute]: true }));
+    setTimeout(() => {
+      setClickedButtons((prev) => ({ ...prev, [product.id_product_attribute]: false }));
+    }, 300); // Duración de la animación (más rápida)
   };
 
   return (
@@ -169,7 +187,11 @@ const ProductSearchCard = ({ onAddProduct }) => {
             {filteredProducts.map((productGroup) => (
               <React.Fragment key={productGroup.product_name}>
                 <tr className="bg-gray-100">
-                  <td colSpan="7" className="py-4 px-4 border-b font-bold text-lg cursor-pointer" onClick={() => handleProductClick(productGroup.image_url)}>
+                  <td
+                    colSpan="7"
+                    className="py-4 px-4 border-b font-bold text-lg cursor-pointer"
+                    onClick={() => handleProductClick(productGroup.image_url)}
+                  >
                     {productGroup.product_name}
                   </td>
                 </tr>
@@ -195,8 +217,10 @@ const ProductSearchCard = ({ onAddProduct }) => {
                     </td>
                     <td className="py-2 px-4 border-b">
                       <button
-                        className="bg-black text-white px-4 py-2 rounded"
-                        onClick={() => addProductToCart(product)}
+                        className={`px-4 py-2 rounded transition-colors duration-300 ${
+                          clickedButtons[product.id_product_attribute] ? 'bg-green-500' : 'bg-black'
+                        } text-white`}
+                        onClick={() => handleAddToCartWithAnimation(product)}
                       >
                         Añadir
                       </button>
