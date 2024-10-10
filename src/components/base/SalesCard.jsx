@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../modals/Modal';
 import { jsPDF } from 'jspdf';
 import sessionConfig from '../../data/sessionConfig.json';
+import ticketConfigData from '../../data/ticket.json'; // Importa la configuración del ticket
+import JsBarcode from 'jsbarcode';
 
 const SalesCard = ({
   cartItems,
@@ -96,6 +98,7 @@ const SalesCard = ({
       giftTicket,
       date: new Date(),
       shop: sessionConfig,
+      employeeName: sessionConfig.name_employee, // Asegúrate de que este campo existe
     };
 
     console.log('Información del ticket de compra:', saleData);
@@ -117,34 +120,74 @@ const SalesCard = ({
   };
 
   const generatePDF = (saleData) => {
-    const doc = new jsPDF();
-
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: [72.11, 297],
+    });    
+  
     // Establecer la fuente predeterminada
     doc.setFont('Helvetica', 'normal');
-
+  
+    let yPosition = 20;
+  
+    // Logo de cabecera
+    if (ticketConfigData.logo) {
+      const img = new Image();
+      img.src = ticketConfigData.logo;
+      doc.addImage(img, 'PNG', 80, yPosition, 50, 30); // Ajusta las coordenadas y tamaño según sea necesario
+      yPosition += 40;
+    }
+  
+    // Texto de cabecera 1
+    if (ticketConfigData.headerText1) {
+      doc.setFontSize(12);
+      doc.text(ticketConfigData.headerText1, 105, yPosition, { align: 'center' });
+      yPosition += 6;
+    }
+  
+    // Texto de cabecera 2
+    if (ticketConfigData.headerText2) {
+      doc.setFontSize(12);
+      doc.text(ticketConfigData.headerText2, 105, yPosition, { align: 'center' });
+      yPosition += 6;
+    }
+  
     // Información de la tienda
-    doc.setFontSize(16);
-    doc.text(saleData.shop.shop_name, 10, 20);
     doc.setFontSize(12);
-    doc.text(`Dirección: ${saleData.shop.address}`, 10, 28);
-    doc.text(`Teléfono: ${saleData.shop.phone}`, 10, 34);
-
+    doc.text(saleData.shop.shop_name, 10, yPosition);
+    yPosition += 6;
+    doc.text(`Dirección: ${saleData.shop.address}`, 10, yPosition);
+    yPosition += 6;
+    doc.text(`Teléfono: ${saleData.shop.phone}`, 10, yPosition);
+    yPosition += 10;
+  
     // Fecha y hora de la venta
-    doc.text(`Fecha: ${saleData.date.toLocaleDateString()}`, 10, 44);
-    doc.text(`Hora: ${saleData.date.toLocaleTimeString()}`, 10, 50);
+    const date = saleData.date;
+    const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${
+      (date.getMonth() + 1).toString().padStart(2, '0')
+    }/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${
+      date.getMinutes().toString().padStart(2, '0')
+    }`;
+
+    // Reemplaza las líneas donde se muestra la fecha y hora por:
+    doc.text(`Fecha: ${formattedDate}`, 10, yPosition);
+    yPosition += 6;
+    doc.text(`Atendido por: ${saleData.employeeName}`, 10, yPosition);
+    yPosition += 10;
 
     // Línea divisoria
-    doc.line(10, 54, 200, 54);
-
+    doc.line(10, yPosition, 200, yPosition);
+    yPosition += 6;
+  
     // Encabezados de la tabla
     doc.setFontSize(12);
-    doc.text('Cant.', 10, 62);
-    doc.text('Producto', 30, 62);
-    doc.text('P/U', 130, 62, { align: 'right' });
-    doc.text('Total', 180, 62, { align: 'right' });
-
+    doc.text('Cant.', 10, yPosition);
+    doc.text('Producto', 30, yPosition);
+    doc.text('P/U', 130, yPosition, { align: 'right' });
+    doc.text('Total', 180, yPosition, { align: 'right' });
+    yPosition += 8;
+  
     // Detalles de los productos
-    let yPosition = 70;
     saleData.cartItems.forEach((item) => {
       doc.text(`${item.quantity}`, 10, yPosition);
       doc.text(`${item.product_name} ${item.combination_name}`, 30, yPosition);
@@ -152,47 +195,84 @@ const SalesCard = ({
       doc.text(`${(item.price * item.quantity).toFixed(2)} €`, 180, yPosition, { align: 'right' });
       yPosition += 8;
     });
-
+  
     // Línea divisoria
     doc.line(10, yPosition, 200, yPosition);
     yPosition += 6;
-
+  
     // Total
     doc.setFontSize(14);
     doc.text(`Total: ${saleData.total.toFixed(2)} €`, 180, yPosition, { align: 'right' });
     yPosition += 10;
-
+  
     // Métodos de pago
     doc.setFontSize(12);
     doc.text('Métodos de Pago:', 10, yPosition);
     yPosition += 6;
     saleData.selectedMethods.forEach((method) => {
-      doc.text(
-        `${method.charAt(0).toUpperCase() + method.slice(1)}: ${parseFloat(saleData.amounts[method]).toFixed(2)} €`,
-        20,
-        yPosition
-      );
-      yPosition += 6;
+      const amount = parseFloat(saleData.amounts[method]);
+      if (!isNaN(amount) && amount > 0) {
+        doc.text(
+          `${method.charAt(0).toUpperCase() + method.slice(1)}: ${amount.toFixed(2)} €`,
+          20,
+          yPosition
+        );
+        yPosition += 6;
+      }
     });
-
+  
     // Cambio
     doc.text(`Cambio: ${saleData.changeAmount.toFixed(2)} €`, 10, yPosition);
     yPosition += 10;
 
-    // Ticket de regalo (si aplica)
-    if (saleData.giftTicket) {
-      doc.setFontSize(14);
-      doc.text('--- TICKET DE REGALO ---', 105, yPosition, { align: 'center' });
-      yPosition += 10;
-    }
+    const IVA_RATE = 0.21; // 21%
+    const baseAmount = saleData.total / (1 + IVA_RATE);
+    const ivaAmount = saleData.total - baseAmount;
 
+    // Después de los métodos de pago
+    doc.setFontSize(12);
+    doc.text(`IVA (${(IVA_RATE * 100).toFixed(0)}%): ${ivaAmount.toFixed(2)} €`, 10, yPosition);
+    yPosition += 10;
+
+  
+    // Texto final 1
+    if (ticketConfigData.footerText1) {
+      doc.setFontSize(12);
+      doc.text(ticketConfigData.footerText1, 105, yPosition, { align: 'center' });
+      yPosition += 6;
+    }
+  
+    // Texto final 2
+    if (ticketConfigData.footerText2) {
+      doc.setFontSize(12);
+      doc.text(ticketConfigData.footerText2, 105, yPosition, { align: 'center' });
+      yPosition += 6;
+    }
+  
     // Mensaje de agradecimiento
     doc.setFontSize(12);
     doc.text('¡Gracias por su compra!', 105, yPosition, { align: 'center' });
+  
+    // Configuramos el documento para que se imprima automáticamente
+  doc.autoPrint();
 
-    // Abrir el PDF en una nueva ventana
-    window.open(doc.output('bloburl'), '_blank');
+  // Obtenemos el PDF como un blob
+  const pdfBlob = doc.output('blob');
+
+  // Creamos un objeto URL para el blob
+  const blobUrl = URL.createObjectURL(pdfBlob);
+
+  // Creamos un iframe oculto
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = blobUrl;
+
+  document.body.appendChild(iframe);
+
+  iframe.onload = () => {
+    iframe.contentWindow.print();
   };
+};
 
   const isFinalizeDisabled =
     Object.values(amounts).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) < total;
